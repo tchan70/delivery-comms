@@ -23,18 +23,21 @@ We also encourage you to:
 - Don't implement anything unnecessary - i.e. authentication, database, containerization. We won't give additional credit for that.
 
 ## Description
- As a highly personalised service, communications to our customers must be tailored purr-fectly and personalised to each and every customer. As we have multiple channels of communications (i.e. emails, SMS, landing pages), we like to keep the templating logic for this channel-agnostic and in a dedicated REST API service.
 
- For example, calling `GET /comms/welcome-fresh/<USER-ID>` might return
+As a highly personalised service, communications to our customers must be tailored purr-fectly and personalised to each and every customer. As we have multiple channels of communications (i.e. emails, SMS, landing pages), we like to keep the templating logic for this channel-agnostic and in a dedicated REST API service.
+
+For example, calling `GET /comms/welcome-fresh/<USER-ID>` might return
+
 ```json
 {
-    "message": "Welcome to KatKin, <full-name>! We're super excited for <cat1> and <cat2> to join the KatKin club and start loving fresh!"
+  "message": "Welcome to KatKin, <full-name>! We're super excited for <cat1> and <cat2> to join the KatKin club and start loving fresh!"
 }
 ```
+
 with the interpolated values populated with that specific customer's (and cat's) data. This endpoint could then be used to generate content for SMSs, emails, or personalized web pages.
 
-
 ## The setup
+
 A skeletal backend has already been setting up for you, using TypeScript and NestJS - the language and framework we use at KatKin. To run this backend, you can do `yarn start`.
 
 There is no frontend setup - you are free to setup one of your own React-based one as you choose, either within the same repository or in a different repository.
@@ -86,7 +89,9 @@ For example, with the following user:
   ]
 }
 ```
+
 hitting `/comms/your-next-delivery/ff535484-6880-4653-b06e-89983ecf4ed5` should return the following body:
+
 ```JSON
 {
     "title": "Your next delivery for Dorian and Ocie",
@@ -113,25 +118,23 @@ F -> 71.25 GBP
 
 So for example, if a user had 3 cats, each on pouch size A, B, C, but only the first two cats (on A and B) currently have an active subscription, then their price would be 55.50 + 59.50 = £115.00 pounds.
 
-
 ## 2. The Frontend Task
 
 Using React (or your favourite React-based metaframework of choice), create a frontend with just one page - `/welcome/<USER-ID>`, which calls the API endpoint described in the previous step and renders the message in a style similar to the figma file provided [here](https://www.figma.com/design/b6Q7B8dBr6QbdqkhPNoFgD/Untitled?node-id=0-1).
 
 You can:
-  - Create a separate folder/repository to do this if you choose.
-  - Use any libraries/frameworks you want, i.e. Tailwind, styled components (or not - feel free to just use regular styling/CSS as well).
-  - Use any project generators you want (i.e. `create-next-app`, `create-react-app`, `create-vite-app`)
 
-_Note_: We aren't expecting an exact 1-to-1 copy of the design, i.e. exact fonts, spacing, or colors. Just get roughly close enough. __Use any random image of a cat__ that you can find.
+- Create a separate folder/repository to do this if you choose.
+- Use any libraries/frameworks you want, i.e. Tailwind, styled components (or not - feel free to just use regular styling/CSS as well).
+- Use any project generators you want (i.e. `create-next-app`, `create-react-app`, `create-vite-app`)
 
-
+_Note_: We aren't expecting an exact 1-to-1 copy of the design, i.e. exact fonts, spacing, or colors. Just get roughly close enough. **Use any random image of a cat** that you can find.
 
 # Submission
 
-Either:
+Send it via email to tech@katkin.com & nikki@katkin.com, you can attach the code in one of the two following ways:
 
 1. Make your solution publicly available in a Git repository(s) and send us the URL(s). You can have a separate frontend/backend repository if you want. Please make sure to name the repository something inconspicuous, i.e, don't put `KatKin` in the name. Do not fork this repository as your solution will be visible to all other candidates.
-2. Or, if option 1 is unfeasible, zip up all your code (please do not include `node_modules`!) and send it via email to tech@katkin.com
+2. Or, if option 1 is unfeasible, zip up all your code (please do not include `node_modules`!).
 
 We would also appreciate it if you can write a sentence or two about what you think of this test and/or and how we could improve it.
