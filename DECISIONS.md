@@ -61,3 +61,50 @@ Each entry lists the decision, the alternatives I considered, why I chose it, an
 - **Alternatives:** do the formatting and pricing inside the service method.
 - **Why:** the controller only validates input and delegates. The service fetches the user, filters active cats and fills the template. Each rule (names, price, free gift) is a pure function with its own tests, so the edge cases are tested without Nest.
 - **Cost:** more files for a small feature.
+
+## 11. Next.js 15.5 (App Router) with the API call in a Server Component
+
+- **Alternatives:** Next.js 16; Vite + React with a client-side `fetch`.
+- **Why:** the brief requires Node 18 or later, and Next.js 16 needs Node 20.9. The page fetches on the server, so the browser gets finished HTML in one request, the API needs no CORS setup, and `API_BASE_URL` never reaches the browser. `cache: 'no-store'` because prices can change.
+- **Cost:** Next.js is heavier than a single-page Vite app for one page, and the page needs a Node server to run.
+
+## 12. One `next/image`, reshaped by CSS
+
+- **Alternatives:** two images (a circle for mobile, a panel for desktop) with one hidden by CSS.
+- **Why:** a hidden `<img>` still downloads. One image with `sizes="(min-width: 768px) 324px, 56px"` lets the browser choose the file: a 128px file on a 2x phone, 750px on desktop (checked in the Network panel). `fill` sits inside a frame with a fixed size, so the image cannot shift the layout, and `priority` preloads it because it is above the fold.
+- **Cost:** the `sizes` string must stay in step with the CSS by hand.
+
+## 13. Page states: `notFound()` for 400 and 404, `error.tsx` for everything else
+
+- **Alternatives:** separate pages for "invalid link" and "unknown user"; retry with `reset()`.
+- **Why:** to a customer, a malformed link and an unknown user mean the same thing. A 5xx, a network failure or an unexpected response shape (checked with a type guard) throws, and `error.tsx` offers "Try again". The button reloads the page, because Next's `reset()` only re-renders on the client and would not run the failed server fetch again.
+- **Cost:** a full reload is heavier than a client-side retry.
+
+## 14. `loading.tsx` makes the not-found page return HTTP 200
+
+- **Alternatives:** no `loading.tsx`, so `notFound()` returns a real 404 status.
+- **Why:** `loading.tsx` makes Next stream the page shell before the API answers. After that the status line has gone, so `notFound()` renders the 404 UI with status 200 and adds `<meta name="robots" content="noindex">`. For a personal page opened from an email or SMS, a fast first paint matters more than the status code, and nothing indexes it.
+- **Cost:** monitoring that counts 404 status codes will not see these. Removing `loading.tsx` fixes that if it matters more.
+
+## 15. CSS Modules with colour variables, and system fonts
+
+- **Alternatives:** Tailwind; styled-components; a web font through `next/font`.
+- **Why:** CSS Modules ship with Next.js, so the page needs no styling dependency. I eyedropped the colours from the Figma screenshots into CSS variables in `globals.css`. The layout is mobile first with one breakpoint at 768px. The brief says fonts only need to be close, so system fonts avoid a font download.
+- **Cost:** the 768px breakpoint appears in two CSS files, because CSS variables cannot be used in media queries.
+
+## 16. The web app copies the response type and checks it at runtime
+
+- **Alternatives:** a shared types package; OpenAPI with generated types.
+- **Why:** the two apps are separate projects, and a shared package needs workspace tooling. A type guard checks the response at runtime, so a contract change fails loudly on the error page instead of rendering `undefined`.
+- **Cost:** the two type definitions can drift. OpenAPI codegen is the next step (see the README).
+
+## 17. "See details" is a `<button>`, "Edit delivery" is an `<a>`
+
+- **Why:** the design notes say "See details" opens a modal (an action, so a button) and "Edit delivery" goes to another page (navigation, so a link). Both have TODOs, because the modal and the edit page are out of scope. CSS sets the capitals, so screen readers read "See details" and not a string of capital letters.
+- **Cost:** the button does nothing yet, and the link goes to `#`.
+
+## 18. Jest through `next/jest`, without `jest-dom`
+
+- **Alternatives:** Vitest; adding `@testing-library/jest-dom`.
+- **Why:** the API already uses Jest, so one test runner covers both apps. `getBy*` queries throw when an element is missing, so `toBeTruthy()` and `toBeNull()` are enough and the tests need one dependency fewer.
+- **Cost:** failure messages are less descriptive than `toBeInTheDocument()`. The page itself is an async Server Component, which React Testing Library cannot render, so the tests cover `DeliveryCard` and the helpers, and I checked the page by hand.

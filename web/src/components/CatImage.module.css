@@ -1,0 +1,25 @@
+/* The frame has a fixed size, so the image cannot shift the layout as it loads. */
+.frame {
+  position: relative;
+  flex-shrink: 0;
+  width: 56px;
+  height: 56px;
+  margin-top: -28px; /* Half of the circle sits above the card's top edge. */
+  border: 2px solid var(--color-surface);
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+.image {
+  object-fit: cover;
+}
+
+@media (min-width: 768px) {
+  .frame {
+    width: 45%;
+    height: auto; /* Stretches to the full card height. */
+    margin-top: 0;
+    border: 0;
+    border-radius: 0;
+  }
+}
