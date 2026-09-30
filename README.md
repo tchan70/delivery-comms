@@ -1,140 +1,143 @@
-# KatKin's Full-stack Coding Test
+# Next delivery comms
 
-## BEFORE YOU BEGIN
+A NestJS endpoint that builds a personalised "your next delivery" message for a customer, and a Next.js page that renders it.
 
-Please take your time to thoroughly read through this README. If anything is unclear or you think there is a mistake somewhere, please let us know via email. We recommend you spend around 90 minutes on this test and do as much as you can. Submission instructions are at the bottom of this README.
+- **API:** `GET /comms/your-next-delivery/:userId` returns `{ title, message, totalPrice, freeGift }`.
+- **Web:** `/welcome/:userId` calls the API on the server and renders the Figma design on mobile and desktop.
 
-This test is split into two parts - a backend REST API section, and a frontend section. If you struggle to finish the backend section, then please do the frontend section to the best of your ability by either faking/stubbing or not doing any API calls.
+The original brief was this README in the starter commit. See it with `git show 38f381c:README.md`.
 
-Do not worry if you do not finish everything. If in doubt, err on the side of quality.
+## Run it
 
-We also encourage you to:
+You need Node 22 (tested with 22.22.0) or Node 18.18+ (tested with 18.20.8), and Yarn 1 through Corepack:
 
-- Use Google, Stackoverflow, online documentation, AI as much as you require.
-- Write tests if you think they are beneficial, but only if you think they are within reason of the time limit.
-- Install and use any third party packages if you see fit
-- Think about what you would do if you had more time, or if this was a real-world production project. We may ask further questions about your solution in further interviews.
-
-## How will we assess your solution?
-
-- Readability and how well-typed your code is
-- The code should be written in Typescript and _must_ compile and run, on Node 18 or later.
-- We take into account your previous experience with TypeScript.
-- Don't implement anything unnecessary - i.e. authentication, database, containerization. We won't give additional credit for that.
-
-## Description
-
-As a highly personalised service, communications to our customers must be tailored purr-fectly and personalised to each and every customer. As we have multiple channels of communications (i.e. emails, SMS, landing pages), we like to keep the templating logic for this channel-agnostic and in a dedicated REST API service.
-
-For example, calling `GET /comms/welcome-fresh/<USER-ID>` might return
-
-```json
-{
-  "message": "Welcome to KatKin, <full-name>! We're super excited for <cat1> and <cat2> to join the KatKin club and start loving fresh!"
-}
+```bash
+corepack enable
 ```
 
-with the interpolated values populated with that specific customer's (and cat's) data. This endpoint could then be used to generate content for SMSs, emails, or personalized web pages.
+**API** (repo root, port 3000):
 
-## The setup
-
-A skeletal backend has already been setting up for you, using TypeScript and NestJS - the language and framework we use at KatKin. To run this backend, you can do `yarn start`.
-
-There is no frontend setup - you are free to setup one of your own React-based one as you choose, either within the same repository or in a different repository.
-
-There is a `data.json` file containing user data in this repository, which you should read from in place of a database.
-
-## 1. The Backend Task
-
-Within this codebase, create an endpoint `/comms/your-next-delivery/<USER-ID>`, that looks up the corresponding user's data, and returns a JSON payload of the following shape:
-
-```JSON
-{
-    "title": "Your next delivery for <cat names, separated by comma or 'and'>",
-    "message": "Hey <firstName>! In two days' time, we'll be charging you for your next order for <cat names, formatted as described below>'s fresh food.",
-    "totalPrice": <total price, calculated via the formula shown in a later section in this README>,
-    "freeGift": <true if the total price exceeds 120 pounds, otherwise false>
-}
+```bash
+yarn install
+yarn start
 ```
 
-Cat names should be formatted in a grammatically correct manner, i.e. just `A` if there's a single cat named A, `A and B` if there's two cats, `A, B and C` if there's three or more cats.
+Then open http://localhost:3000/comms/your-next-delivery/ff535484-6880-4653-b06e-89983ecf4ed5
 
-For example, with the following user:
+**Web** (`web/`, port 3001, in a second terminal):
 
-```JSON
-{
-  "id": "ff535484-6880-4653-b06e-89983ecf4ed5",
-  "firstName": "Kayleigh",
-  "lastName": "Wilderman",
-  "email": "Kayleigh_Wilderman@hotmail.com",
-  "cats": [
-    {
-      "name": "Dorian",
-      "subscriptionActive": true,
-      "breed": "Thai",
-      "pouchSize": "C"
-    },
-    {
-      "name": "Ocie",
-      "subscriptionActive": true,
-      "breed": "Somali",
-      "pouchSize": "F"
-    },
-    {
-      "name": "Eldridge",
-      "subscriptionActive": false,
-      "breed": "Himalayan",
-      "pouchSize": "A"
-    }
-  ]
-}
+```bash
+cd web
+cp .env.example .env.local   # optional: API_BASE_URL defaults to http://localhost:3000
+yarn install                 # on Node 18: yarn install --ignore-engines (see DECISIONS.md §19)
+yarn dev
 ```
 
-hitting `/comms/your-next-delivery/ff535484-6880-4653-b06e-89983ecf4ed5` should return the following body:
+Then open http://localhost:3001/welcome/ff535484-6880-4653-b06e-89983ecf4ed5
 
-```JSON
-{
-    "title": "Your next delivery for Dorian and Ocie",
-    "message": "Hey Kayleigh! In two days' time, we'll be charging you for your next order for Dorian and Ocie's fresh food.",
-    "totalPrice": 134.00,
-    "freeGift": true
-}
+`API_BASE_URL` is the only setting. The web app reads it on the server only, so it never reaches the browser.
+
+### Users to try
+
+| User ID | What it shows |
+|---|---|
+| `ff535484-6880-4653-b06e-89983ecf4ed5` | README example: 2 active cats, 1 inactive, £134.00, free gift |
+| `618f4ed6-1c5b-4993-a149-f64700bf31dd` | 1 cat, £69.00, no free gift |
+| `ea17433d-7527-45a5-acbc-2e2f78f95c6e` | 3 cats ("Cristina, Mariah and Rebekah"), £197.50 |
+| `97f92e82-1609-4820-b658-80a2aca18b76` | £118.25, just under the free gift threshold |
+| `00000000-0000-4000-8000-000000000000` | Unknown user: API 404, "not found" page |
+| `not-a-uuid` | Invalid ID: API 400, "not found" page |
+
+Stop the API to see the web error page. Its "Try again" button recovers when the API is back.
+
+## Tests and checks
+
+| | API (repo root) | Web (`web/`) |
+|---|---|---|
+| Type check | `yarn typecheck` | `yarn typecheck` |
+| Lint | `yarn lint` (the starter's script, runs with `--fix`) | `yarn lint` |
+| Unit tests | `yarn test` (34) | `yarn test` (21) |
+| e2e tests | `yarn test:e2e` (3, supertest) | none, see "What I'd do next" |
+| Build | `yarn build` | `yarn build` |
+
+## What I built
+
+### API
+
+```text
+src/
+  users/                       data access
+    user.types.ts              Cat, User, PouchSize
+    parse-users.ts             type guards: narrow data.json from unknown to User[]
+    users.repository.ts        loads data.json once at startup, lookup by ID
+  comms/                       templating
+    comms.controller.ts        route + ParseUUIDPipe
+    comms.service.ts           find user, filter active cats, fill the template
+    comms.types.ts             NextDeliveryResponse
+    helpers/                   pure functions, each with its own spec
+      format-cat-names.ts        "A", "A and B", "A, B and C"
+      calculate-total-price.ts   integer pence
+      qualifies-for-free-gift.ts strictly more than £120.00
+      pence-to-pounds.ts
+test/comms.e2e-spec.ts         200, 400, 404 through the real app and data.json
 ```
 
-### Price calculation
+| Request | Response |
+|---|---|
+| Known user with active cats | 200 with the template filled in |
+| ID is not a UUID | 400 (`ParseUUIDPipe`) |
+| No user with that ID | 404 `User <id> not found` |
+| User has no active cats | 404 `User <id> has no active cats` |
 
-Cats come in different shapes and sizes. Bigger cats need more food, and vice versa. Our food is delivered in pouches, hence we use the term _pouch size_ to refer to how much food a cat needs. Therefore, every cat in the dataset will have a `pouchSize` attributed to them - between `A` to `F`. Every pouch size will have its own price.
+### Web
 
-A user's order price is there calculated as the sum of their _active_ cats' pouch size prices. The pouch size prices are described below:
-
+```text
+web/src/
+  app/welcome/[userId]/
+    page.tsx                   Server Component: one API call on the server
+    not-found.tsx              for API 400 and 404
+    error.tsx                  for 5xx, network failure, 5 s timeout, bad response shape
+  components/
+    DeliveryCard.tsx           the Figma card; FREE GIFT tag only when freeGift is true
+    CatImage.tsx               one next/image, a circle on mobile, a panel on desktop
+    MessageCard.tsx            not found and error states
+  lib/
+    api.ts                     fetch with timeout, status handling, runtime type check
+    format-price.ts            134 -> "£134.00"
 ```
-A -> 55.50 GBP
-B -> 59.50 GBP
-C -> 62.75 GBP
-D -> 66.00 GBP
-E -> 69.00 GBP
-F -> 71.25 GBP
-```
 
-So for example, if a user had 3 cats, each on pouch size A, B, C, but only the first two cats (on A and B) currently have an active subscription, then their price would be 55.50 + 59.50 = £115.00 pounds.
+## Key decisions
 
-## 2. The Frontend Task
+[DECISIONS.md](DECISIONS.md) lists each decision with the alternatives, the reason and the cost. The main ones:
 
-Using React (or your favourite React-based metaframework of choice), create a frontend with just one page - `/welcome/<USER-ID>`, which calls the API endpoint described in the previous step and renders the message in a style similar to the figma file provided [here](https://www.figma.com/design/b6Q7B8dBr6QbdqkhPNoFgD/Untitled?node-id=0-1).
+- **Money in integer pence inside the API** (§6). The response keeps the brief's contract, a number in pounds, and the web app formats it.
+- **No casts on data.json** (§4). Type guards narrow `unknown` to `User[]`, and bad data stops the app at startup.
+- **404 for a user with no active cats** (§9). There is no next delivery, and the message says which case it is.
+- **Server-side fetch in a Server Component** (§11). One request, no CORS, and the API URL stays on the server.
+- **One image, reshaped by CSS** (§12). A phone downloads a 128px file, and the image cannot shift the layout.
+- **No `loading.tsx`, and a 5 s timeout instead** (§14). Unknown users get a real 404 status, and a hung API shows the error page.
+- **Node 18** (§19). The code compiles and runs on Node 18. On Node 18 the web install needs `--ignore-engines`.
 
-You can:
+## What I'd do next (in priority order)
 
-- Create a separate folder/repository to do this if you choose.
-- Use any libraries/frameworks you want, i.e. Tailwind, styled components (or not - feel free to just use regular styling/CSS as well).
-- Use any project generators you want (i.e. `create-next-app`, `create-react-app`, `create-vite-app`)
+1. **CI:** typecheck, lint, tests and build for both apps on Node 18 and 22 on every push.
+2. **One contract:** generate an OpenAPI spec from the API (`@nestjs/swagger`) and the web types from it, to remove the copied type (§16).
+3. **Observability:** send errors from `error.tsx` and the API to an error tracker, add structured logs with request IDs, and alert on 5xx and timeouts.
+4. **Error codes:** add a machine-readable code to error bodies, so a client can tell "unknown user" from "no active cats" (§9).
+5. **Page tests:** Playwright against a stub API for the 200, 404, 5xx and timeout states, with screenshots at 375, 768 and 1280px.
+6. **Real data:** replace `UsersRepository` with a database, and match UUIDs without regard to case (§5).
+7. **Product:** build the "See details" modal and the "Edit delivery" page, use each customer's own cat photo, and move the copy into templates that non-engineers can edit (§8, §12, §17).
+8. **Money in v2 of the API:** return pence and a currency code instead of pounds (§6).
 
-_Note_: We aren't expecting an exact 1-to-1 copy of the design, i.e. exact fonts, spacing, or colors. Just get roughly close enough. **Use any random image of a cat** that you can find.
+## How I used AI tools
 
-# Submission
+I used Claude Code as a pair programmer, with rules I set at the start: a written plan before any code, small commits, and a stop for my review at three checkpoints (API, web, docs).
 
-Send it via email to tech@katkin.com & nikki@katkin.com, you can attach the code in one of the two following ways:
+- **AI did:** read the brief and profiled `data.json` (user counts, edge cases, the £120 boundary), proposed the plan and listed open questions, wrote most of the code and tests, ran the checks, and checked the page at several widths in a browser.
+- **I decided:** every open question (for example 404 for no active cats, pence inside the API, Next.js 15.5 for Node 18, CSS Modules, Jest), the rubric the code had to meet, and the image licence.
+- **I checked by hand:** I read the diffs at each checkpoint and ran both apps myself. In Chrome I found four problems that the automated checks missed: the card sat outside `<main>` in the accessibility tree, the mobile card stretched between 600 and 767px, the circle crop was off-centre, and the desktop spacing was too small. After I reviewed the loading trade-off, I asked for the 5 s fetch timeout.
+- **Checks that test the output against the brief:** the service and e2e tests assert the README example body character for character, and the helper tests cover every pouch size and the £120 boundary.
 
-1. Make your solution publicly available in a Git repository(s) and send us the URL(s). You can have a separate frontend/backend repository if you want. Please make sure to name the repository something inconspicuous, i.e, don't put `KatKin` in the name. Do not fork this repository as your solution will be visible to all other candidates.
-2. Or, if option 1 is unfeasible, zip up all your code (please do not include `node_modules`!).
+## Credits
 
-We would also appreciate it if you can write a sentence or two about what you think of this test and/or and how we could improve it.
+Cat photo by [@daniel_zopf on Unsplash](https://unsplash.com/photos/brown-and-black-cat-on-white-textile-iQsbPwP-pYw), under the [Unsplash License](https://unsplash.com/license).

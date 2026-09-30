@@ -71,8 +71,7 @@ Each entry lists the decision, the alternatives I considered, why I chose it, an
 ## 12. One `next/image`, reshaped by CSS
 
 - **Alternatives:** two images (a circle for mobile, a panel for desktop) with one hidden by CSS.
-- **Why:** a hidden `<img>` still downloads. One image with `sizes="(min-width: 768px) 324px, 56px"` lets the browser choose the file: a 128px file on a 2x phone, 750px on desktop (checked in the Network panel). `fill` sits inside a frame with a fixed size, so the image cannot shift the layout, and `priority` preloads it because it is above the fold.
-The cat sits left of centre in the photo, so `object-position: 7% 50%` centres it in the mobile circle.
+- **Why:** a hidden `<img>` still downloads. One image with `sizes="(min-width: 768px) 324px, 56px"` lets the browser choose the file: a 128px file on a 2x phone, 750px on desktop (checked with the browser's resource timing). `fill` sits inside a frame with a fixed size, so the image cannot shift the layout, and `priority` preloads it because it is above the fold. The cat sits left of centre in the photo, so `object-position: 7% 50%` centres it in the mobile circle.
 - **Cost:** the `sizes` string must stay in step with the CSS by hand. `object-position` is tuned to this photo, so a real per-cat photo would need a focal point from the data or a square crop.
 
 ## 13. Page states: `notFound()` for 400 and 404, `error.tsx` for everything else
@@ -110,3 +109,10 @@ The cat sits left of centre in the photo, so `object-position: 7% 50%` centres i
 - **Alternatives:** Vitest; adding `@testing-library/jest-dom`.
 - **Why:** the API already uses Jest, so one test runner covers both apps. `getBy*` queries throw when an element is missing, so `toBeTruthy()` and `toBeNull()` are enough and the tests need one dependency fewer.
 - **Cost:** failure messages are less descriptive than `toBeInTheDocument()`. The page itself is an async Server Component, which React Testing Library cannot render, so the tests cover `DeliveryCard` and the helpers, and I checked the page by hand.
+
+## 19. Node 18: the API is clean, the web app needs `--ignore-engines` to install
+
+- **What I found:** in a fresh clone on Node 18.20.8, the API installs and passes everything. The web app's `yarn install` stops, because some newer packages declare Node 20+ in `engines`: `eslint-visitor-keys@5` (through typescript-eslint in `eslint-config-next`), `brace-expansion@5` and `lru-cache@11` (through Jest 30's `glob`/`minimatch`), and the optional `sharp@0.35` (through Next.js). With `yarn install --ignore-engines`, typecheck, lint, all tests, `next build` and `next start` pass on Node 18, including image optimisation through `sharp`.
+- **Alternatives:** pin those packages to older versions with Yarn `resolutions` and downgrade to Jest 29; move `.nvmrc` to Node 22 LTS.
+- **Why:** the brief requires that the code compiles and runs on Node 18, and it does. Pinning transitive dev dependencies adds packages to maintain for a Node version that stopped getting security fixes in April 2025.
+- **Cost:** a reviewer on Node 18 must add `--ignore-engines` for `web/` (the README says so). On Node 20.9+ everything installs cleanly.
