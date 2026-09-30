@@ -76,9 +76,9 @@ Each entry lists the decision, the alternatives I considered, why I chose it, an
 
 ## 13. Page states: `notFound()` for 400 and 404, `error.tsx` for everything else
 
-- **Alternatives:** separate pages for "invalid link" and "unknown user"; retry with `reset()`.
-- **Why:** to a customer, a malformed link and an unknown user mean the same thing. A 5xx, a network failure, a timeout (see §14) or an unexpected response shape (checked with a type guard) throws, and `error.tsx` offers "Try again". The button reloads the page, because Next's `reset()` only re-renders on the client and would not run the failed server fetch again.
-- **Cost:** a full reload is heavier than a client-side retry.
+- **Alternatives:** separate pages for "invalid link" and "unknown user"; a "Try again" that reloads the whole page; `reset()` on its own.
+- **Why:** to a customer, a malformed link and an unknown user mean the same thing. A 5xx, a network failure, a timeout (see §14) or an unexpected response shape (checked with a type guard) throws, and `error.tsx` offers "Try again". `reset()` on its own only re-renders the boundary on the client, so the failed server fetch would not run again. The button calls `router.refresh()` and `reset()` inside one `startTransition`: the server renders the page again, and the boundary resets when that result arrives. I checked it in a browser: with the API down the error stays; with the API back, the card appears without a page reload.
+- **Cost:** two framework calls to explain instead of one `window.location.reload()`.
 
 ## 14. No `loading.tsx`: the page waits for the API, then sends complete HTML
 
