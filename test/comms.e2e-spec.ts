@@ -32,6 +32,19 @@ describe('GET /comms/your-next-delivery/:userId (e2e)', () => {
       });
   });
 
+  it('returns 200 for an upper-case user ID', () => {
+    return request(app.getHttpServer())
+      .get('/comms/your-next-delivery/FF535484-6880-4653-B06E-89983ECF4ED5')
+      .expect(200)
+      .expect((response) => {
+        expect(response.body).toEqual(
+          expect.objectContaining({
+            title: 'Your next delivery for Dorian and Ocie',
+          }),
+        );
+      });
+  });
+
   it('returns 400 when the user ID is not a UUID', () => {
     return request(app.getHttpServer())
       .get('/comms/your-next-delivery/not-a-uuid')
@@ -41,6 +54,11 @@ describe('GET /comms/your-next-delivery/:userId (e2e)', () => {
   it('returns 404 when no user has the ID', () => {
     return request(app.getHttpServer())
       .get('/comms/your-next-delivery/00000000-0000-4000-8000-000000000000')
-      .expect(404);
+      .expect(404)
+      .expect({
+        statusCode: 404,
+        message: 'User 00000000-0000-4000-8000-000000000000 not found',
+        error: 'Not Found',
+      });
   });
 });

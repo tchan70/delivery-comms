@@ -30,7 +30,7 @@ Each entry lists the decision, the alternatives I considered, why I chose it, an
 
 - **Alternatives:** read the file on every request; search the array on every request.
 - **Why:** the repository is the seam where a real database would go, so `CommsService` never knows about files. The `Map` gives constant-time lookup by ID.
-- **Cost:** changes to `data.json` need a restart. IDs match exactly, so an upper-case UUID returns 404 (all IDs in the data are lower case).
+- **Cost:** changes to `data.json` need a restart. UUIDs compare without regard to case (RFC 4122) and `ParseUUIDPipe` accepts upper case, so the repository lower-cases IDs on insert and on lookup. An e2e test checks that an upper-case ID returns 200.
 
 ## 6. Money as integer pence inside the API, pounds as a number in the response
 

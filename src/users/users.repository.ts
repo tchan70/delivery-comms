@@ -15,10 +15,13 @@ export class UsersRepository {
   constructor() {
     const data: unknown = JSON.parse(readFileSync(DATA_FILE_PATH, 'utf8'));
     const users = parseUsers(data);
-    this.usersById = new Map(users.map((user) => [user.id, user]));
+    this.usersById = new Map(
+      users.map((user) => [user.id.toLowerCase(), user]),
+    );
   }
 
+  /** UUIDs compare without regard to case (RFC 4122), so keys are lower case. */
   findById(id: string): User | undefined {
-    return this.usersById.get(id);
+    return this.usersById.get(id.toLowerCase());
   }
 }
