@@ -6,7 +6,7 @@ interface MessageCardProps {
   children?: ReactNode;
 }
 
-/** A plain card for the loading, not found and error states. */
+/** A plain card for the not found and error states. */
 export function MessageCard({
   title,
   children,
