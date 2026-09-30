@@ -110,9 +110,10 @@ Each entry lists the decision, the alternatives I considered, why I chose it, an
 - **Why:** the API already uses Jest, so one test runner covers both apps. `getBy*` queries throw when an element is missing, so `toBeTruthy()` and `toBeNull()` are enough and the tests need one dependency fewer.
 - **Cost:** failure messages are less descriptive than `toBeInTheDocument()`. The page itself is an async Server Component, which React Testing Library cannot render, so the tests cover `DeliveryCard` and the helpers, and I checked the page by hand.
 
-## 19. Node 18: the API is clean, the web app needs `--ignore-engines` to install
+## 19. Node 18: `web/.yarnrc` turns off the engines check so a plain `yarn` works
 
-- **What I found:** in a fresh clone on Node 18.20.8, the API installs and passes everything. The web app's `yarn install` stops, because some newer packages declare Node 20+ in `engines`: `eslint-visitor-keys@5` (through typescript-eslint in `eslint-config-next`), `brace-expansion@5` and `lru-cache@11` (through Jest 30's `glob`/`minimatch`), and the optional `sharp@0.35` (through Next.js). With `yarn install --ignore-engines`, typecheck, lint, all tests, `next build` and `next start` pass on Node 18, including image optimisation through `sharp`.
-- **Alternatives:** pin those packages to older versions with Yarn `resolutions` and downgrade to Jest 29; move `.nvmrc` to Node 22 LTS.
-- **Why:** the brief requires that the code compiles and runs on Node 18, and it does. Pinning transitive dev dependencies adds packages to maintain for a Node version that stopped getting security fixes in April 2025.
-- **Cost:** a reviewer on Node 18 must add `--ignore-engines` for `web/` (the README says so). On Node 20.9+ everything installs cleanly.
+- **What I found:** in a fresh clone on Node 18.20.8, the API installs and passes everything. The web app's `yarn install` stopped, because some newer packages declare Node 20+ in `engines`: `eslint-visitor-keys@5` (through typescript-eslint in `eslint-config-next`), `brace-expansion@5` and `lru-cache@11` (through Jest 30's `glob`/`minimatch`), and the optional `sharp@0.35` (through Next.js). With the engines check off, typecheck, lint, all tests, `next build` and `next start` pass on Node 18, including image optimisation through `sharp`.
+- **Decision:** `web/.yarnrc` contains `--ignore-engines true`, so a plain `yarn` installs on Node 18 as the brief requires.
+- **Alternatives:** tell Node 18 users to type `--ignore-engines` (easy to miss); pin those packages to older versions with Yarn `resolutions` and downgrade to Jest 29; move `.nvmrc` to Node 22 LTS.
+- **Why:** the brief requires that the code compiles and runs on Node 18, and a reviewer should not need a special flag. Pinning transitive dev dependencies adds packages to maintain for a Node version that stopped getting security fixes in April 2025.
+- **Cost:** the engines check is off for every web install, on every Node version, so a future package that really needs a newer Node would install without a warning and fail later. The full suite on Node 18 and 22 (the first item in "What I'd do next") would catch that.
