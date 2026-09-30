@@ -31,3 +31,21 @@ Each entry lists the decision, the alternatives I considered, why I chose it, an
 - **Alternatives:** read the file on every request; search the array on every request.
 - **Why:** the repository is the seam where a real database would go, so `CommsService` never knows about files. The `Map` gives constant-time lookup by ID.
 - **Cost:** changes to `data.json` need a restart. IDs match exactly, so an upper-case UUID returns 404 (all IDs in the data are lower case).
+
+## 6. Money as integer pence inside the API, pounds as a number in the response
+
+- **Alternatives:** floats in pounds throughout; return a string such as `"134.00"`; return pence.
+- **Why:** prices such as 62.75 are not exact in binary floating point, so all sums use integers (5550, 6275, ...). The response keeps the brief's contract: `totalPrice` is a JSON number in pounds. JSON cannot keep trailing zeros, so `134.00` is sent as `134` and the frontend formats it as `£134.00`.
+- **Cost:** one conversion (`penceToPounds`) at the edge. A client that does arithmetic on `totalPrice` works with floats again; a production API would likely return pence plus a currency code.
+
+## 7. `freeGift` is strictly greater than £120.00
+
+- **Alternatives:** greater than or equal.
+- **Why:** the brief says "exceeds 120 pounds". No combination of the current prices totals exactly £120.00, so the boundary is tested at the helper level with 11999, 12000 and 12001 pence.
+- **Cost:** none.
+
+## 8. Cat names: "A", "A and B", "A, B and C", then a literal `'s`
+
+- **Alternatives:** Oxford comma; `'` alone after names that end in "s".
+- **Why:** both follow the brief literally. 20 users have a last active cat whose name ends in "s" (for example Travis, Markus), so they get "Travis's fresh food". Modern British style guides accept that form.
+- **Cost:** a copywriter might prefer "Travis' fresh food". It is a one-line change in the template if so.
