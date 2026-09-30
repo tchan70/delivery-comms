@@ -1,7 +1,7 @@
 import { Cat, POUCH_SIZES, PouchSize, User } from './user.types';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 function isPouchSize(value: unknown): value is PouchSize {
