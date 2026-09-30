@@ -29,7 +29,7 @@ Then open http://localhost:3000/comms/your-next-delivery/ff535484-6880-4653-b06e
 ```bash
 cd web
 cp .env.example .env.local   # optional: API_BASE_URL defaults to http://localhost:3000
-yarn install                 # on Node 18: yarn install --ignore-engines (see DECISIONS.md §19)
+yarn install                 # web/.yarnrc lets this work on Node 18 too (DECISIONS.md §19)
 yarn dev
 ```
 
@@ -42,13 +42,14 @@ Then open http://localhost:3001/welcome/ff535484-6880-4653-b06e-89983ecf4ed5
 | User ID | What it shows |
 |---|---|
 | `ff535484-6880-4653-b06e-89983ecf4ed5` | README example: 2 active cats, 1 inactive, £134.00, free gift |
+| `FF535484-6880-4653-B06E-89983ECF4ED5` | The same user: IDs match without regard to case |
 | `618f4ed6-1c5b-4993-a149-f64700bf31dd` | 1 cat, £69.00, no free gift |
 | `ea17433d-7527-45a5-acbc-2e2f78f95c6e` | 3 cats ("Cristina, Mariah and Rebekah"), £197.50 |
 | `97f92e82-1609-4820-b658-80a2aca18b76` | £118.25, just under the free gift threshold |
 | `00000000-0000-4000-8000-000000000000` | Unknown user: API 404, "not found" page |
 | `not-a-uuid` | Invalid ID: API 400, "not found" page |
 
-Stop the API to see the web error page. Its "Try again" button recovers when the API is back.
+Stop the API to see the web error page. When the API is back, its "Try again" button renders the card without a page reload.
 
 ## Tests and checks
 
@@ -56,8 +57,8 @@ Stop the API to see the web error page. Its "Try again" button recovers when the
 |---|---|---|
 | Type check | `yarn typecheck` | `yarn typecheck` |
 | Lint | `yarn lint` (the starter's script, runs with `--fix`) | `yarn lint` |
-| Unit tests | `yarn test` (34) | `yarn test` (21) |
-| e2e tests | `yarn test:e2e` (3, supertest) | none, see "What I'd do next" |
+| Unit tests | `yarn test` (39) | `yarn test` (22) |
+| e2e tests | `yarn test:e2e` (4, supertest) | none, see "What I'd do next" |
 | Build | `yarn build` | `yarn build` |
 
 ## What I built
@@ -66,20 +67,25 @@ Stop the API to see the web error page. Its "Try again" button recovers when the
 
 ```text
 src/
+  main.ts                      starts the app on PORT (default 3000)
+  app.module.ts                imports CommsModule
   users/                       data access
+    users.module.ts            exports UsersRepository
     user.types.ts              Cat, User, PouchSize
     parse-users.ts             type guards: narrow data.json from unknown to User[]
-    users.repository.ts        loads data.json once at startup, lookup by ID
+    users.repository.ts        loads data.json once at startup, lookup by ID (any case)
   comms/                       templating
+    comms.module.ts            imports UsersModule
     comms.controller.ts        route + ParseUUIDPipe
-    comms.service.ts           find user, filter active cats, fill the template
+    comms.service.ts           find user, filter active cats, decide the 404s
     comms.types.ts             NextDeliveryResponse
     helpers/                   pure functions, each with its own spec
-      format-cat-names.ts        "A", "A and B", "A, B and C"
-      calculate-total-price.ts   integer pence
-      qualifies-for-free-gift.ts strictly more than £120.00
+      build-next-delivery-comms.ts  fills the title and message template
+      format-cat-names.ts           "A", "A and B", "A, B and C"
+      calculate-total-price.ts      integer pence
+      qualifies-for-free-gift.ts    strictly more than £120.00
       pence-to-pounds.ts
-test/comms.e2e-spec.ts         200, 400, 404 through the real app and data.json
+test/comms.e2e-spec.ts         200 (any case), 400, 404 through the real app and data.json
 ```
 
 | Request | Response |
@@ -93,16 +99,21 @@ test/comms.e2e-spec.ts         200, 400, 404 through the real app and data.json
 
 ```text
 web/src/
-  app/welcome/[userId]/
-    page.tsx                   Server Component: one API call on the server
-    not-found.tsx              for API 400 and 404
-    error.tsx                  for 5xx, network failure, 5 s timeout, bad response shape
+  app/
+    layout.tsx                 <html>, <body> and the single <main>
+    globals.css                colour variables from the Figma, base styles
+    welcome/[userId]/
+      page.tsx                 Server Component: one API call on the server
+      not-found.tsx            for API 400 and 404
+      error.tsx                for 5xx, network failure, timeout, bad response shape
   components/
     DeliveryCard.tsx           the Figma card; FREE GIFT tag only when freeGift is true
     CatImage.tsx               one next/image, a circle on mobile, a panel on desktop
     MessageCard.tsx            not found and error states
   lib/
-    api.ts                     fetch with timeout, status handling, runtime type check
+    api.ts                     fetch with a 5 s timeout; 400/404 -> null, else throw
+    is-next-delivery-response.ts  type guard for the API response
+    types.ts                   NextDeliveryResponse (copy of the API type)
     format-price.ts            134 -> "£134.00"
 ```
 
@@ -110,13 +121,14 @@ web/src/
 
 [DECISIONS.md](DECISIONS.md) lists each decision with the alternatives, the reason and the cost. The main ones:
 
-- **Money in integer pence inside the API** (§6). The response keeps the brief's contract, a number in pounds, and the web app formats it.
+- **Money in integer pence inside the API** (§6). Integer minor units are the money convention, and sums stay exact for any future price. The response keeps the brief's contract, a number in pounds, and the web app formats it.
 - **No casts on data.json** (§4). Type guards narrow `unknown` to `User[]`, and bad data stops the app at startup.
 - **404 for a user with no active cats** (§9). There is no next delivery, and the message says which case it is.
 - **Server-side fetch in a Server Component** (§11). One request, no CORS, and the API URL stays on the server.
 - **One image, reshaped by CSS** (§12). A phone downloads a 128px file, and the image cannot shift the layout.
 - **No `loading.tsx`, and a 5 s timeout instead** (§14). Unknown users get a real 404 status, and a hung API shows the error page.
-- **Node 18** (§19). The code compiles and runs on Node 18. On Node 18 the web install needs `--ignore-engines`.
+- **"Try again" re-runs the server fetch** (§13) with `router.refresh()` and `reset()`, without a page reload.
+- **Node 18** (§19). The code compiles and runs on Node 18. `web/.yarnrc` turns off the engines check, so a plain `yarn` installs.
 
 ## What I'd do next (in priority order)
 
@@ -125,7 +137,7 @@ web/src/
 3. **Observability:** send errors from `error.tsx` and the API to an error tracker, add structured logs with request IDs, and alert on 5xx and timeouts.
 4. **Error codes:** add a machine-readable code to error bodies, so a client can tell "unknown user" from "no active cats" (§9).
 5. **Page tests:** Playwright against a stub API for the 200, 404, 5xx and timeout states, with screenshots at 375, 768 and 1280px.
-6. **Real data:** replace `UsersRepository` with a database, and match UUIDs without regard to case (§5).
+6. **Real data:** replace `UsersRepository` with a database (§5).
 7. **Product:** build the "See details" modal and the "Edit delivery" page, use each customer's own cat photo, and move the copy into templates that non-engineers can edit (§8, §12, §17).
 8. **Money in v2 of the API:** return pence and a currency code instead of pounds (§6).
 
@@ -136,6 +148,7 @@ I used Claude Code as a pair programmer, with rules I set at the start: a writte
 - **AI did:** read the brief and profiled `data.json` (user counts, edge cases, the £120 boundary), proposed the plan and listed open questions, wrote most of the code and tests, ran the checks, and checked the page at several widths in a browser.
 - **I decided:** every open question (for example 404 for no active cats, pence inside the API, Next.js 15.5 for Node 18, CSS Modules, Jest), the rubric the code had to meet, and the image licence.
 - **I checked by hand:** I read the diffs at each checkpoint and ran both apps myself. In Chrome I found four problems that the automated checks missed: the card sat outside `<main>` in the accessibility tree, the mobile card stretched between 600 and 767px, the circle crop was off-centre, and the desktop spacing was too small. After I reviewed the loading trade-off, I asked for the 5 s fetch timeout.
+- **Independent review:** a separate AI session and two Gemini models reviewed the finished code. They found no bugs. I checked each finding against the code before fixing it, and rejected two with reasons (DECISIONS.md §20).
 - **Checks that test the output against the brief:** the service and e2e tests assert the README example body character for character, and the helper tests cover every pouch size and the £120 boundary.
 
 ## Credits

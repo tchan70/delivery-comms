@@ -35,7 +35,7 @@ Each entry lists the decision, the alternatives I considered, why I chose it, an
 ## 6. Money as integer pence inside the API, pounds as a number in the response
 
 - **Alternatives:** floats in pounds throughout; return a string such as `"134.00"`; return pence.
-- **Why:** prices such as 62.75 are not exact in binary floating point, so all sums use integers (5550, 6275, ...). The response keeps the brief's contract: `totalPrice` is a JSON number in pounds. JSON cannot keep trailing zeros, so `134.00` is sent as `134` and the frontend formats it as `£134.00`.
+- **Why:** integer minor units are the usual convention for money. Today's six prices are all multiples of £0.25, so they happen to be exact in binary floating point. A future price such as 59.99 is not, and sums of such values drift (`0.1 + 0.2` is `0.30000000000000004`). With integer pence every sum is exact, and rounding happens once, at display (`Intl.NumberFormat` in the web app). The response keeps the brief's contract: `totalPrice` is a JSON number in pounds. JSON cannot keep trailing zeros, so `134.00` is sent as `134` and the frontend formats it as `£134.00`.
 - **Cost:** one conversion (`penceToPounds`) at the edge. A client that does arithmetic on `totalPrice` works with floats again; a production API would likely return pence plus a currency code.
 
 ## 7. `freeGift` is strictly greater than £120.00
@@ -117,3 +117,8 @@ Each entry lists the decision, the alternatives I considered, why I chose it, an
 - **Alternatives:** tell Node 18 users to type `--ignore-engines` (easy to miss); pin those packages to older versions with Yarn `resolutions` and downgrade to Jest 29; move `.nvmrc` to Node 22 LTS.
 - **Why:** the brief requires that the code compiles and runs on Node 18, and a reviewer should not need a special flag. Pinning transitive dev dependencies adds packages to maintain for a Node version that stopped getting security fixes in April 2025.
 - **Cost:** the engines check is off for every web install, on every Node version, so a future package that really needs a newer Node would install without a warning and fail later. The full suite on Node 18 and 22 (the first item in "What I'd do next") would catch that.
+
+## 20. Considered after review, and rejected
+
+- **`new CommsService(fakeRepository as UsersRepository)` in the service spec.** It is shorter than `Test.createTestingModule`, but it needs a cast, and the code has none. The testing module is the idiomatic Nest way to swap a provider, and the fake is typed as `Pick<UsersRepository, 'findById'>`, so it needs no cast.
+- **`@types/node@18` in both projects**, so the compiler would reject APIs that only exist in Node 20+. Next.js 15 and its dependencies build against newer Node types, and older types risk clashes in `node_modules`. Instead, the full suite runs on Node 18.20.8 (§19), which catches a Node 20+ API on every path the tests run.
