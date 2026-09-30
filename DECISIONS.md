@@ -78,14 +78,15 @@ The cat sits left of centre in the photo, so `object-position: 7% 50%` centres i
 ## 13. Page states: `notFound()` for 400 and 404, `error.tsx` for everything else
 
 - **Alternatives:** separate pages for "invalid link" and "unknown user"; retry with `reset()`.
-- **Why:** to a customer, a malformed link and an unknown user mean the same thing. A 5xx, a network failure or an unexpected response shape (checked with a type guard) throws, and `error.tsx` offers "Try again". The button reloads the page, because Next's `reset()` only re-renders on the client and would not run the failed server fetch again.
+- **Why:** to a customer, a malformed link and an unknown user mean the same thing. A 5xx, a network failure, a timeout (see §14) or an unexpected response shape (checked with a type guard) throws, and `error.tsx` offers "Try again". The button reloads the page, because Next's `reset()` only re-renders on the client and would not run the failed server fetch again.
 - **Cost:** a full reload is heavier than a client-side retry.
 
 ## 14. No `loading.tsx`: the page waits for the API, then sends complete HTML
 
 - **Alternatives:** keep `loading.tsx` (a loading card while the API answers); a `<Suspense>` boundary around the card only.
 - **Why:** I first added `loading.tsx`. It makes Next stream the page shell before the API answers, and that caused two problems. `notFound()` then ran after the status line had gone, so the not-found page returned HTTP 200 (with `noindex`). Chrome's accessibility tree also showed `<main>` holding only the loading card, with the real `<article>` outside it. Without it, the server waits for the API, unknown users get a real 404 status, and the HTML has one `<main>` with one `<article>` and one `<h1>`. The page is one small API call, so the wait is short.
-- **Cost:** no loading UI. The browser's own progress indicator shows while the API answers, and a slow or hung API delays the first paint. Next steps: a timeout on the fetch (`AbortSignal.timeout`) so a hung API shows the error page, and a skeleton inside `<Suspense>` if the API gets slower and a 200 status on not-found becomes acceptable.
+- **Timeout:** because nothing renders until the API answers, the fetch has a 5 second timeout (`AbortSignal.timeout(5000)` in `web/src/lib/api.ts`). A hung API now shows `error.tsx` (HTTP 500) after 5 seconds instead of a page that never loads. I checked this against a local server that never responds.
+- **Cost:** no loading UI. The browser's own progress indicator shows while the API answers, and a slow API delays the first paint by up to 5 seconds. If the API gets slower, the next step is a skeleton inside `<Suspense>`, which accepts the 200 status on not-found.
 
 ## 15. CSS Modules with colour variables, and system fonts
 
