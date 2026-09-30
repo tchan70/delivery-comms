@@ -1,10 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { UsersRepository } from '../users/users.repository';
 import { NextDeliveryResponse } from './comms.types';
-import { calculateTotalPriceInPence } from './helpers/calculate-total-price';
-import { formatCatNames } from './helpers/format-cat-names';
-import { penceToPounds } from './helpers/pence-to-pounds';
-import { qualifiesForFreeGift } from './helpers/qualifies-for-free-gift';
+import { buildNextDeliveryComms } from './helpers/build-next-delivery-comms';
 
 @Injectable()
 export class CommsService {
@@ -22,16 +19,6 @@ export class CommsService {
       throw new NotFoundException(`User ${userId} has no active cats`);
     }
 
-    const catNames = formatCatNames(activeCats.map((cat) => cat.name));
-    const totalPriceInPence = calculateTotalPriceInPence(
-      activeCats.map((cat) => cat.pouchSize),
-    );
-
-    return {
-      title: `Your next delivery for ${catNames}`,
-      message: `Hey ${user.firstName}! In two days' time, we'll be charging you for your next order for ${catNames}'s fresh food.`,
-      totalPrice: penceToPounds(totalPriceInPence),
-      freeGift: qualifiesForFreeGift(totalPriceInPence),
-    };
+    return buildNextDeliveryComms(user.firstName, activeCats);
   }
 }

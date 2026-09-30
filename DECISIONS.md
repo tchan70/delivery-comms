@@ -59,7 +59,7 @@ Each entry lists the decision, the alternatives I considered, why I chose it, an
 ## 10. Thin controller, orchestrating service, pure helpers
 
 - **Alternatives:** do the formatting and pricing inside the service method.
-- **Why:** the controller only validates input and delegates. The service fetches the user, filters active cats and fills the template. Each rule (names, price, free gift) is a pure function with its own tests, so the edge cases are tested without Nest.
+- **Why:** the controller only validates input and delegates. The service fetches the user, filters active cats and decides the 404s. `buildNextDeliveryComms()` fills the template from a first name and the active cats, and each rule inside it (names, price, free gift) is a pure function with its own tests. So the copy and the edge cases are tested without Nest.
 - **Cost:** more files for a small feature.
 
 ## 11. Next.js 15.5 (App Router) with the API call in a Server Component
