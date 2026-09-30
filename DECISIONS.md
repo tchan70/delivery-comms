@@ -72,7 +72,8 @@ Each entry lists the decision, the alternatives I considered, why I chose it, an
 
 - **Alternatives:** two images (a circle for mobile, a panel for desktop) with one hidden by CSS.
 - **Why:** a hidden `<img>` still downloads. One image with `sizes="(min-width: 768px) 324px, 56px"` lets the browser choose the file: a 128px file on a 2x phone, 750px on desktop (checked in the Network panel). `fill` sits inside a frame with a fixed size, so the image cannot shift the layout, and `priority` preloads it because it is above the fold.
-- **Cost:** the `sizes` string must stay in step with the CSS by hand.
+The cat sits left of centre in the photo, so `object-position: 7% 50%` centres it in the mobile circle.
+- **Cost:** the `sizes` string must stay in step with the CSS by hand. `object-position` is tuned to this photo, so a real per-cat photo would need a focal point from the data or a square crop.
 
 ## 13. Page states: `notFound()` for 400 and 404, `error.tsx` for everything else
 
@@ -80,16 +81,16 @@ Each entry lists the decision, the alternatives I considered, why I chose it, an
 - **Why:** to a customer, a malformed link and an unknown user mean the same thing. A 5xx, a network failure or an unexpected response shape (checked with a type guard) throws, and `error.tsx` offers "Try again". The button reloads the page, because Next's `reset()` only re-renders on the client and would not run the failed server fetch again.
 - **Cost:** a full reload is heavier than a client-side retry.
 
-## 14. `loading.tsx` makes the not-found page return HTTP 200
+## 14. No `loading.tsx`: the page waits for the API, then sends complete HTML
 
-- **Alternatives:** no `loading.tsx`, so `notFound()` returns a real 404 status.
-- **Why:** `loading.tsx` makes Next stream the page shell before the API answers. After that the status line has gone, so `notFound()` renders the 404 UI with status 200 and adds `<meta name="robots" content="noindex">`. For a personal page opened from an email or SMS, a fast first paint matters more than the status code, and nothing indexes it.
-- **Cost:** monitoring that counts 404 status codes will not see these. Removing `loading.tsx` fixes that if it matters more.
+- **Alternatives:** keep `loading.tsx` (a loading card while the API answers); a `<Suspense>` boundary around the card only.
+- **Why:** I first added `loading.tsx`. It makes Next stream the page shell before the API answers, and that caused two problems. `notFound()` then ran after the status line had gone, so the not-found page returned HTTP 200 (with `noindex`). Chrome's accessibility tree also showed `<main>` holding only the loading card, with the real `<article>` outside it. Without it, the server waits for the API, unknown users get a real 404 status, and the HTML has one `<main>` with one `<article>` and one `<h1>`. The page is one small API call, so the wait is short.
+- **Cost:** no loading UI. The browser's own progress indicator shows while the API answers, and a slow or hung API delays the first paint. Next steps: a timeout on the fetch (`AbortSignal.timeout`) so a hung API shows the error page, and a skeleton inside `<Suspense>` if the API gets slower and a 200 status on not-found becomes acceptable.
 
 ## 15. CSS Modules with colour variables, and system fonts
 
 - **Alternatives:** Tailwind; styled-components; a web font through `next/font`.
-- **Why:** CSS Modules ship with Next.js, so the page needs no styling dependency. I eyedropped the colours from the Figma screenshots into CSS variables in `globals.css`. The layout is mobile first with one breakpoint at 768px. The brief says fonts only need to be close, so system fonts avoid a font download.
+- **Why:** CSS Modules ship with Next.js, so the page needs no styling dependency. I eyedropped the colours from the Figma screenshots into CSS variables in `globals.css`. The layout is mobile first with one breakpoint at 768px. The mobile card stops at 480px and centres, so it does not stretch between 480px and 767px. The brief says fonts only need to be close, so system fonts avoid a font download.
 - **Cost:** the 768px breakpoint appears in two CSS files, because CSS variables cannot be used in media queries.
 
 ## 16. The web app copies the response type and checks it at runtime

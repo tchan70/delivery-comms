@@ -2,3 +2,9 @@
   min-height: 100vh;
   padding: 44px 16px;
 }
+
+@media (min-width: 768px) {
+  .main {
+    padding-top: 80px;
+  }
+}

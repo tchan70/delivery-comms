@@ -12,6 +12,10 @@
 
 .image {
   object-fit: cover;
+  /* The cat sits left of centre in the photo. In the square mobile crop,
+     7% puts its face in the middle. The desktop panel crops less, so the
+     same value only moves the cat slightly towards the centre. */
+  object-position: 7% 50%;
 }
 
 @media (min-width: 768px) {
