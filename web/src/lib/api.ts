@@ -1,8 +1,7 @@
 import { isNextDeliveryResponse } from './is-next-delivery-response';
 import type { NextDeliveryResponse } from './types';
 
-// Server-only: no NEXT_PUBLIC_ prefix, so the value never reaches the browser.
-const API_BASE_URL = process.env.API_BASE_URL ?? 'http://localhost:3000';
+const DEFAULT_API_BASE_URL = 'http://localhost:3000';
 
 // Without a timeout, a hanging API would keep the page loading forever.
 // When it fires, fetch rejects and error.tsx shows.
@@ -16,7 +15,10 @@ const REQUEST_TIMEOUT_MS = 5000;
 export async function getNextDelivery(
   userId: string,
 ): Promise<NextDeliveryResponse | null> {
-  const url = `${API_BASE_URL}/comms/your-next-delivery/${encodeURIComponent(userId)}`;
+  // Server-only: no NEXT_PUBLIC_ prefix, so the value never reaches the
+  // browser. Read on each call, not at import, so tests can set it.
+  const apiBaseUrl = process.env.API_BASE_URL ?? DEFAULT_API_BASE_URL;
+  const url = `${apiBaseUrl}/comms/your-next-delivery/${encodeURIComponent(userId)}`;
   const response = await fetch(url, {
     cache: 'no-store',
     signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),

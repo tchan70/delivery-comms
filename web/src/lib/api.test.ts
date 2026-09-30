@@ -5,6 +5,7 @@ import { getNextDelivery } from './api';
 import type { NextDeliveryResponse } from './types';
 
 const userId = 'ff535484-6880-4653-b06e-89983ecf4ed5';
+const apiBaseUrlFromShell = process.env.API_BASE_URL;
 
 const delivery: NextDeliveryResponse = {
   title: 'Your next delivery for Dorian and Ocie',
@@ -18,8 +19,21 @@ function jsonResponse(body: unknown, status: number): Response {
 }
 
 describe('getNextDelivery', () => {
+  // Fix the base URL, so the tests pass whatever API_BASE_URL the shell has.
+  beforeEach(() => {
+    process.env.API_BASE_URL = 'http://api.test';
+  });
+
   afterEach(() => {
     jest.restoreAllMocks();
+  });
+
+  afterAll(() => {
+    if (apiBaseUrlFromShell === undefined) {
+      delete process.env.API_BASE_URL;
+    } else {
+      process.env.API_BASE_URL = apiBaseUrlFromShell;
+    }
   });
 
   it('returns the delivery for a 200 response', async () => {
@@ -29,8 +43,22 @@ describe('getNextDelivery', () => {
 
     await expect(getNextDelivery(userId)).resolves.toEqual(delivery);
     expect(fetchSpy).toHaveBeenCalledWith(
-      `http://localhost:3000/comms/your-next-delivery/${userId}`,
+      `http://api.test/comms/your-next-delivery/${userId}`,
       expect.objectContaining({ cache: 'no-store' }),
+    );
+  });
+
+  it('uses http://localhost:3000 when API_BASE_URL is not set', async () => {
+    delete process.env.API_BASE_URL;
+    const fetchSpy = jest
+      .spyOn(global, 'fetch')
+      .mockResolvedValue(jsonResponse(delivery, 200));
+
+    await getNextDelivery(userId);
+
+    expect(fetchSpy).toHaveBeenCalledWith(
+      `http://localhost:3000/comms/your-next-delivery/${userId}`,
+      expect.anything(),
     );
   });
 
@@ -42,7 +70,7 @@ describe('getNextDelivery', () => {
     await getNextDelivery('../admin');
 
     expect(fetchSpy).toHaveBeenCalledWith(
-      'http://localhost:3000/comms/your-next-delivery/..%2Fadmin',
+      'http://api.test/comms/your-next-delivery/..%2Fadmin',
       expect.anything(),
     );
   });
